@@ -1,0 +1,5 @@
+AGAMOTTO release package
+Frontend build bridge: Next.js App Router entry + stable TypeScript 5.9.3
+Frontend context compile fix: local setToast helper
+Participant submission compile fix: duplicate submitProject binding removed
+Docker ignore: node_modules/.next excluded from frontend build context
