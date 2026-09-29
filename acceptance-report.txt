@@ -1,0 +1,159 @@
+AGAMOTTO — Acceptance Report
+=============================
+
+Submission artifacts
+--------------------
+This report records the acceptance checks performed against the supplied AGAMOTTO repository.
+
+Project
+-------
+AGAMOTTO is a self-hostable hackathon management platform centered on blind, conflict-aware,
+auditable judging.
+
+Environment
+-----------
+- Backend: FastAPI, SQLAlchemy, Alembic, PostgreSQL-compatible persistence
+- Frontend: Next.js, React, TypeScript, Tailwind
+- Runtime: Docker Compose
+- Tests: Pytest
+- Canonical API namespace: /api/...
+- OpenAPI: /docs
+
+Acceptance results
+------------------
+
+1. Backend automated tests
+   PASS — 14 tests passed with pytest.
+
+2. Authentication and authorization
+   PASS — login, refresh-cookie flow, role checks, event ownership/membership checks,
+   and server-side permission checks are covered by the backend implementation and tests.
+
+3. Event lifecycle enforcement
+   PASS — event phase transitions and phase-specific operations are enforced by the API.
+
+4. Registration and teams
+   PASS — event registration, approval state, one-team-per-event enforcement, team-size
+   limits, and team membership checks are implemented.
+
+5. Project submission
+   PASS — one project per team is enforced; submission editing is controlled by event
+   phase and editing policy; optional project version snapshots are stored.
+
+6. Judge assignment
+   PASS — manual assignment validates judge role, duplicate assignment, event ownership,
+   event phase, and blocking conflicts. Automatic assignment balances current assignment
+   count while excluding conflicting judges.
+
+7. Blind judging
+   PASS — judge project serialization omits team/member/college identity and assignment
+   metadata; judges only receive projects assigned to them.
+
+8. Conflict management
+   PASS — team membership, prior event participation, judge-declared conflicts, and
+   organizer-recorded blocking conflicts are checked server-side.
+
+9. Review lifecycle
+   PASS — DRAFT → FINALIZED → LOCKED is enforced. Locked reviews cannot be modified.
+   Organizer reopen returns a review to DRAFT and records an audit event.
+
+10. Scoring validation
+    PASS — unknown criteria are rejected, scores are range-checked against maxScore,
+    finalized reviews require all rubric criteria, and finalized criterion entries require
+    justification.
+
+11. Incomplete judging gate
+    PASS — result calculation detects missing assignments/reviews and blocks calculation
+    unless an organizer supplies an explicit override reason. The override is audited.
+
+12. Normalization
+    PASS — z_score, trimmed_mean, and borda methods are implemented. For z_score,
+    per-judge mean/std/count are stored in the normalization snapshot. A zero z-score is
+    used for a single-review or zero-variance judge.
+
+13. Deterministic ranking
+    PASS — configured tie-break fields are persisted and applied deterministically.
+    Default order: normalized_score, raw_score, code_name.
+
+14. Result snapshots
+    PASS — each calculation creates a normalization snapshot and result rows reference
+    that snapshot. Publication marks the selected snapshot's rows as published.
+
+15. Audit trail
+    PASS — important workflow mutations create audit records containing actor, event,
+    entity, action, timestamp, and JSON details.
+
+16. JudgeLens
+    PASS — organizer endpoint exposes review count, completion count, judge-level
+    mean/std/count variation, and review timing.
+    NOTE — criterion-level aggregation is currently returned as an empty collection;
+    do not describe it as implemented until that aggregation is added.
+
+17. Integrity Pulse
+    PASS — organizer endpoint reports incomplete projects, blocked assignments, and
+    blocking conflicts. It is deterministic and does not make misconduct accusations.
+
+18. Normalization Proof
+    PASS — organizer endpoint exposes stored snapshot metadata, statistics, result rows,
+    and the z-score formula.
+
+19. Export
+    PASS — organizer export supports JSON and CSV result output.
+
+20. Notifications/reminders
+    PASS — application notification records and organizer reminder endpoint are present.
+
+21. Certificates
+    PASS — certificate metadata is available after event archive.
+
+22. Database migrations
+    PASS by repository inspection — Alembic configuration and two migrations are supplied.
+    The Docker Compose API command runs `alembic upgrade head` before starting FastAPI.
+
+23. Demo seeding
+    PASS by repository inspection — the API container runs the demo seeding module on startup.
+    Demo accounts use the documented local password `LocalDemo123!`.
+
+24. Docker Compose
+    VERIFIED BY INSPECTION — the supplied compose file defines `postgres`, `api`, and
+    `frontend`, with health/dependency ordering and API migration/seed startup commands.
+    A full Docker Compose runtime acceptance test was not executed in this report.
+
+25. Frontend production build
+    NOT VERIFIED IN THIS RUN — the repository contains a production Docker build and
+    `npm run build`, but the attempted local build did not complete within the available
+    execution window. Treat this as a final pre-submission check.
+
+26. Open-source license
+    PASS — the submission documents now include a repository-ready `LICENSE` file containing
+    the Apache License 2.0 text. README identifies Apache-2.0 as the project license and links
+    to the LICENSE file. SPDX identifier: Apache-2.0.
+
+Known scope boundaries
+----------------------
+- No AI judging is claimed.
+- No AI cheating detector is claimed.
+- No blockchain or cryptographic verification is claimed.
+- Audit records are application audit records, not a cryptographic hash chain.
+- JudgeLens currently does not implement criterion-level aggregation.
+- The supplied code supports three normalization methods; the event's configured method
+  determines which one is used.
+- Certificate output is metadata, not a generated certificate document/PDF.
+- The report does not claim that a complete five-minute video has been produced.
+
+Final acceptance gate
+---------------------
+Before submitting, run:
+  docker compose up --build
+  cd frontend && npm run build
+  cd backend && pytest -q
+
+Also verify the repository root contains:
+  LICENSE
+
+Recommended final demo path
+---------------------------
+Organizer login → create/configure event → participant registration → team creation →
+project submission → judge assignment → demonstrate blocked conflict → blind judge access →
+judge review → finalize → lock → calculate results → show normalization proof →
+publish results → participant views published result → archive → certificate metadata.
